@@ -1,2 +1,90 @@
-# Auto detect text files and perform LF normalization
-* text=auto
+# Web Scraping and Data Visualization with BeautifulSoup, Selenium, and Tkinter in Python
+
+from bs4 import BeautifulSoup
+from selenium import webdriver
+import time
+import tkinter as tk
+from tkinter import ttk
+
+# Defining the path to be accessed
+browser = webdriver.Chrome(executable_path="chromedriver")
+
+# Entering the url
+url = "https://blinkit.com/cn/vegetables-fruits/fresh-vegetables/cid/1487/1489"
+browser.get(url)
+
+# Maximizing the window
+browser.maximize_window()
+time.sleep(5)
+
+# Changing location as chennai
+browser.find_element("xpath",'/html/body/div[1]/div/div/div[1]/header/div[1]/div[2]/div/div[2]/div[2]').click()
+time.sleep(3)
+browser.find_element("xpath","/html/body/div[1]/div/div/div[1]/header/div[2]/div[2]/div/div/div/div/div/div[2]/button").click()
+time.sleep(10)
+browser.find_element("xpath","/html/body/div[1]/div/div/div[1]/header/div[2]/div[2]/div/div/div[2]/div[2]/div[3]/a[6]").click()
+time.sleep(10)
+
+# Scrolling the bar to get all the products
+for i in range(0, 2):
+    browser.execute_script("window.scrollTo(0, document.body.scrollHeight)")
+    # waits for 2 seconds the content to load(You can adjust value depending on your internet speed)
+    time.sleep(2)
+
+# minimize the window
+browser.minimize_window()
+
+# Fetching the data from url and store as HTML data in soup
+html = browser.page_source
+soup = BeautifulSoup(html, 'html.parser')
+
+# Fetching product wise data
+product_list = soup.find('div', class_="plp2-container").find_all('div', class_="plp-product")
+
+# Creating a Tkinter window
+root = tk.Tk()
+
+# Creating a Treeview widget
+tree = ttk.Treeview(root, columns=("Vegetable Name", "Quantity", "Price"), show="headings")
+tree.heading("Vegetable Name", text="Vegetable Name", anchor="center")
+tree.heading("Quantity", text="Quantity", anchor="center")
+tree.heading("Price", text="Price", anchor="center")
+
+# Set column alignments to center
+tree.column("Vegetable Name", anchor="w")
+tree.column("Quantity", anchor="w")
+tree.column("Price", anchor="center")
+
+# Creating a custom font for the Treeview widget
+myFont = ("Helvetica", 12)
+
+# Inserting data into the Treeview
+for product in product_list:
+    veg_name = product.find('div', class_="Product__ProductName-sc-11dk8zk-6 fxBwnM").get_text()
+    veg_price = product.find('div', class_="ProductPrice__Price-sc-14194u2-1 eJcLXJ").get_text(strip=True)
+    if product.find('span', class_="variant_text_only plp-product__quantity--box"):
+        veg_quantity = product.find('span', class_="variant_text_only plp-product__quantity--box").get_text()
+    else:
+        veg_quantity = "No Data"
+    veg_price = veg_price.replace("₹", "")
+    
+    # Inserting a row into the Treeview
+    tree.insert("", "end", values=(veg_name, veg_quantity, veg_price), tags=("myFont",))
+
+# Applying the custom font to data rows
+tree.tag_configure("myFont", font=myFont)
+
+# Packing the Treeview widget into the window
+tree.pack(fill=tk.BOTH, expand=1)
+
+# Resize the Treeview when the window is maximized
+def on_configure(event):
+    tree.column("#0", width=event.width)
+    tree.column("Vegetable Name", width=int(event.width*0.4))
+    tree.column("Quantity", width=int(event.width*0.3))
+    tree.column("Price", width=int(event.width*0.3))
+
+root.bind("<Configure>", on_configure)
+
+# Running the Tkinter event loop
+root.mainloop()
